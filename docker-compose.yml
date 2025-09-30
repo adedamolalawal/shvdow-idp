@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=your-jwt-secret-here
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - idp-network
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+    networks:
+      - idp-network
+
+  # GitOps Core Service
+  gitops-core:
+    build: ./services/gitops-core
+    ports:
+      - "8081:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - idp-network
+
+  # CI/CD Engine
+  cicd-engine:
+    build: ./services/cicd-engine
+    ports:
+      - "8082:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - idp-network
+
+  # Service Catalog
+  service-catalog:
+    build: ./services/service-catalog
+    ports:
+      - "8083:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+    depends_on:
+      - postgres
+    networks:
+      - idp-network
+
+  # Observability Stack
+  metrics-collector:
+    build: ./services/metrics-collector
+    ports:
+      - "8084:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+    depends_on:
+      - postgres
+      - prometheus
+    networks:
+      - idp-network
+
+  # Alert Engine
+  alert-engine:
+    build: ./services/alert-engine
+    ports:
+      - "8085:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - idp-network
+
+  # Team Management
+  team-management:
+    build: ./services/team-management
+    ports:
+      - "8086:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+    depends_on:
+      - postgres
+    networks:
+      - idp-network
+
+  # Documentation Engine
+  docs-engine:
+    build: ./services/docs-engine
+    ports:
+      - "8087:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
+    depends_on:
+      - postgres
+    networks:
+      - idp-network
+
+  # Infrastructure Services
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=idp_db
+      - POSTGRES_USER=idp_user
+      - POSTGRES_PASSWORD=idp_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - idp-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - idp-network
+
+  # Observability Infrastructure
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - idp-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - idp-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - idp-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  idp-network:
+    driver: bridge
+
