@@ -35,10 +35,17 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if Docker Compose is available
-if ! command -v docker-compose &> /dev/null; then
+# Check if Docker Compose is available (v2 or v1)
+if ! docker compose version &> /dev/null && ! command -v docker-compose &> /dev/null; then
     print_error "Docker Compose is not installed. Please install Docker Compose and try again."
     exit 1
+fi
+
+# Set Docker Compose command based on what's available
+if docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
+    DOCKER_COMPOSE="docker-compose"
 fi
 
 # Function to wait for service to be ready
@@ -163,22 +170,22 @@ fi
 # Pull images if requested
 if [ "$PULL_IMAGES" = true ]; then
     print_status "Pulling latest images..."
-    docker-compose pull
+    $DOCKER_COMPOSE pull
 fi
 
 # Build images if requested
 if [ "$BUILD_IMAGES" = true ]; then
     print_status "Building images..."
-    docker-compose build
+    $DOCKER_COMPOSE build
 fi
 
 # Stop any existing containers
 print_status "Stopping existing containers..."
-docker-compose down
+$DOCKER_COMPOSE down
 
 # Start infrastructure services first
 print_status "Starting infrastructure services..."
-docker-compose up -d postgres redis
+$DOCKER_COMPOSE up -d postgres redis
 
 # Wait for database to be ready
 print_status "Waiting for database to be ready..."
@@ -188,7 +195,7 @@ sleep 10
 max_attempts=30
 attempt=1
 while [ $attempt -le $max_attempts ]; do
-    if docker-compose exec -T postgres pg_isready -U idp_user -d idp_db > /dev/null 2>&1; then
+    if $DOCKER_COMPOSE exec -T postgres pg_isready -U idp_user -d idp_db > /dev/null 2>&1; then
         print_success "Database is ready!"
         break
     fi
@@ -204,11 +211,11 @@ fi
 
 # Start observability stack
 print_status "Starting observability stack..."
-docker-compose up -d prometheus grafana jaeger
+$DOCKER_COMPOSE up -d prometheus grafana jaeger
 
 # Start application services
 print_status "Starting application services..."
-docker-compose up -d
+$DOCKER_COMPOSE up -d
 
 # Wait for services to be ready
 print_status "Waiting for services to start..."
@@ -242,15 +249,15 @@ echo "  Prometheus:           http://localhost:9090"
 echo "  Jaeger:               http://localhost:16686"
 echo ""
 echo "🔧 Service Status:"
-docker-compose ps
+$DOCKER_COMPOSE ps
 
 echo ""
 echo "📝 Logs:"
-echo "  View all logs:        docker-compose logs -f"
-echo "  View specific service: docker-compose logs -f <service-name>"
+echo "  View all logs:        $DOCKER_COMPOSE logs -f"
+echo "  View specific service: $DOCKER_COMPOSE logs -f <service-name>"
 echo ""
 echo "🛑 To stop all services:"
-echo "  docker-compose down"
+echo "  $DOCKER_COMPOSE down"
 echo ""
 
 # Show resource usage
@@ -258,4 +265,3 @@ echo "💾 Resource Usage:"
 docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" | head -10
 
 print_success "Shadow IDP is now running! 🚀"
-
