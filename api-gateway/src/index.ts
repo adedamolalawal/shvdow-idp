@@ -29,13 +29,9 @@ const logger = winston.createLogger({
   ]
 });
 
-// Redis client for session management
-const redisClient = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-
-redisClient.on('error', (err) => logger.error('Redis Client Error', err));
-redisClient.connect();
+// Redis client for session management (disabled for now)
+let redisClient: any = null;
+logger.info('Redis disabled - running in stateless mode');
 
 // Middleware
 app.use(helmet());
@@ -77,10 +73,16 @@ const authenticateToken = async (req: any, res: any, next: any) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     
-    // Check if token is blacklisted in Redis
-    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
-    if (isBlacklisted) {
-      return res.status(401).json({ error: 'Token has been revoked' });
+    // Check if token is blacklisted in Redis (if available)
+    if (redisClient) {
+      try {
+        const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+        if (isBlacklisted) {
+          return res.status(401).json({ error: 'Token has been revoked' });
+        }
+      } catch (error) {
+        logger.warn('Redis check failed, continuing without blacklist check:', error);
+      }
     }
 
     req.user = decoded;
@@ -119,8 +121,14 @@ app.post('/auth/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Store session in Redis
-    await redisClient.setEx(`session:${username}`, 86400, token);
+    // Store session in Redis (if available)
+    if (redisClient) {
+      try {
+        await redisClient.setEx(`session:${username}`, 86400, token);
+      } catch (error) {
+        logger.warn('Failed to store session in Redis:', error);
+      }
+    }
 
     res.json({
       token,
@@ -140,11 +148,15 @@ app.post('/auth/logout', authenticateToken, async (req: any, res) => {
   try {
     const token = req.headers['authorization']?.split(' ')[1];
     
-    // Add token to blacklist
-    await redisClient.setEx(`blacklist:${token}`, 86400, 'true');
-    
-    // Remove session
-    await redisClient.del(`session:${req.user.username}`);
+    // Add token to blacklist and remove session (if Redis is available)
+    if (redisClient) {
+      try {
+        await redisClient.setEx(`blacklist:${token}`, 86400, 'true');
+        await redisClient.del(`session:${req.user.username}`);
+      } catch (error) {
+        logger.warn('Failed to update Redis during logout:', error);
+      }
+    }
 
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
@@ -237,13 +249,25 @@ app.use('*', (req, res) => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  await redisClient.quit();
+  if (redisClient) {
+    try {
+      await redisClient.quit();
+    } catch (error) {
+      logger.warn('Error closing Redis connection:', error);
+    }
+  }
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
-  await redisClient.quit();
+  if (redisClient) {
+    try {
+      await redisClient.quit();
+    } catch (error) {
+      logger.warn('Error closing Redis connection:', error);
+    }
+  }
   process.exit(0);
 });
 
