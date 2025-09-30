@@ -1,0 +1,23 @@
+
+> shadow-idp-api-gateway@1.0.0 start
+> node dist/index.js
+
+{"level":"info","message":"Redis disabled - running in stateless mode","timestamp":"2025-09-30T23:11:40.892Z"}
+[HPM] Proxy created: /  -> http://gitops-core:8080
+[HPM] Proxy rewrite rule created: "^/api/gitops" ~> ""
+[HPM] Proxy created: /  -> http://cicd-engine:8080
+[HPM] Proxy rewrite rule created: "^/api/cicd" ~> ""
+[HPM] Proxy created: /  -> http://localhost:8081
+[HPM] Proxy rewrite rule created: "^/api/services" ~> ""
+[HPM] Proxy created: /  -> http://metrics-collector:8080
+[HPM] Proxy rewrite rule created: "^/api/metrics" ~> ""
+[HPM] Proxy created: /  -> http://alert-engine:8080
+[HPM] Proxy rewrite rule created: "^/api/alerts" ~> ""
+[HPM] Proxy created: /  -> http://team-management:8080
+[HPM] Proxy rewrite rule created: "^/api/teams" ~> ""
+[HPM] Proxy created: /  -> http://docs-engine:8080
+[HPM] Proxy rewrite rule created: "^/api/docs" ~> ""
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-09-30T23:11:40.904Z"}
+{"ip":"::ffff:127.0.0.1","level":"info","message":"GET /api/services","timestamp":"2025-09-30T23:13:01.635Z","userAgent":"curl/7.88.1"}
+(node:34335) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

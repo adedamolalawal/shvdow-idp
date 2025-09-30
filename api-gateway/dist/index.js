@@ -9,7 +9,6 @@ const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const http_proxy_middleware_1 = require("http-proxy-middleware");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const redis_1 = require("redis");
 const winston_1 = __importDefault(require("winston"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -25,11 +24,8 @@ const logger = winston_1.default.createLogger({
         new winston_1.default.transports.File({ filename: 'logs/combined.log' })
     ]
 });
-const redisClient = (0, redis_1.createClient)({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-redisClient.on('error', (err) => logger.error('Redis Client Error', err));
-redisClient.connect();
+let redisClient = null;
+logger.info('Redis disabled - running in stateless mode');
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -59,9 +55,16 @@ const authenticateToken = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        const isBlacklisted = await redisClient.get(`blacklist:${token}`);
-        if (isBlacklisted) {
-            return res.status(401).json({ error: 'Token has been revoked' });
+        if (redisClient) {
+            try {
+                const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+                if (isBlacklisted) {
+                    return res.status(401).json({ error: 'Token has been revoked' });
+                }
+            }
+            catch (error) {
+                logger.warn('Redis check failed, continuing without blacklist check:', error);
+            }
         }
         req.user = decoded;
         next();
@@ -88,7 +91,14 @@ app.post('/auth/login', async (req, res) => {
             roles: ['developer'],
             permissions: ['read', 'write']
         }, JWT_SECRET, { expiresIn: '24h' });
-        await redisClient.setEx(`session:${username}`, 86400, token);
+        if (redisClient) {
+            try {
+                await redisClient.setEx(`session:${username}`, 86400, token);
+            }
+            catch (error) {
+                logger.warn('Failed to store session in Redis:', error);
+            }
+        }
         res.json({
             token,
             user: {
@@ -106,8 +116,15 @@ app.post('/auth/login', async (req, res) => {
 app.post('/auth/logout', authenticateToken, async (req, res) => {
     try {
         const token = req.headers['authorization']?.split(' ')[1];
-        await redisClient.setEx(`blacklist:${token}`, 86400, 'true');
-        await redisClient.del(`session:${req.user.username}`);
+        if (redisClient) {
+            try {
+                await redisClient.setEx(`blacklist:${token}`, 86400, 'true');
+                await redisClient.del(`session:${req.user.username}`);
+            }
+            catch (error) {
+                logger.warn('Failed to update Redis during logout:', error);
+            }
+        }
         res.json({ message: 'Logged out successfully' });
     }
     catch (error) {
@@ -128,7 +145,7 @@ const serviceRoutes = [
     },
     {
         path: '/api/services',
-        target: process.env.SERVICE_CATALOG_URL || 'http://service-catalog:8080',
+        target: process.env.SERVICE_CATALOG_URL || 'http://localhost:8081',
         auth: true
     },
     {
@@ -188,12 +205,26 @@ app.use('*', (req, res) => {
 });
 process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, shutting down gracefully');
-    await redisClient.quit();
+    if (redisClient) {
+        try {
+            await redisClient.quit();
+        }
+        catch (error) {
+            logger.warn('Error closing Redis connection:', error);
+        }
+    }
     process.exit(0);
 });
 process.on('SIGINT', async () => {
     logger.info('SIGINT received, shutting down gracefully');
-    await redisClient.quit();
+    if (redisClient) {
+        try {
+            await redisClient.quit();
+        }
+        catch (error) {
+            logger.warn('Error closing Redis connection:', error);
+        }
+    }
     process.exit(0);
 });
 app.listen(PORT, () => {

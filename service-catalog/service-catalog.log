@@ -1,0 +1,13 @@
+
+> shadow-idp-service-catalog@1.0.0 start
+> node dist/index.js
+
+{"level":"info","message":"Database connection established successfully","timestamp":"2025-09-30T23:10:28.240Z"}
+{"level":"info","message":"Database models synchronized","timestamp":"2025-09-30T23:10:28.368Z"}
+{"level":"info","message":"Health monitor started - running every 5 minutes","timestamp":"2025-09-30T23:10:28.373Z"}
+{"level":"info","message":"Service Catalog service running on port 8081","timestamp":"2025-09-30T23:10:28.375Z"}
+{"level":"info","message":"Running health checks for 0 services","timestamp":"2025-09-30T23:10:38.378Z"}
+{"ip":"::ffff:127.0.0.1","level":"info","message":"GET /","timestamp":"2025-09-30T23:13:01.651Z","userAgent":"curl/7.88.1"}
+
+{"level":"info","message":"Running health checks for 0 services","timestamp":"2025-09-30T23:10:38.378Z"}
+{"ip":"::ffff:127.0.0.1","level":"info","message":"GET /","timestamp":"2025-09-30T23:13:01.651Z","userAgent":"curl/7.88.1"}

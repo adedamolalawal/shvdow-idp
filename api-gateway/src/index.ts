@@ -179,7 +179,7 @@ const serviceRoutes = [
   },
   {
     path: '/api/services',
-    target: process.env.SERVICE_CATALOG_URL || 'http://service-catalog:8080',
+    target: process.env.SERVICE_CATALOG_URL || 'http://localhost:8081',
     auth: true
   },
   {
