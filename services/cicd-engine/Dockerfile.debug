@@ -1,0 +1,30 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (including dev dependencies for build)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Debug: List files to see what was copied
+RUN echo "=== Files in /app ===" && find /app -type f -name "*.ts" -o -name "*.json" | head -20
+
+# Debug: Check if src directory exists
+RUN echo "=== Contents of src directory ===" && ls -la src/ || echo "src directory not found"
+
+# Debug: Try TypeScript compilation with verbose output
+RUN echo "=== Running TypeScript compilation ===" && npx tsc --listFiles || echo "TypeScript compilation failed"
+
+# Build the application
+RUN npm run build
+
+# Expose port
+EXPOSE 8082
+
+# Start the application
+CMD ["npm", "start"]
