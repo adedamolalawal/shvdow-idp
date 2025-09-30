@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import jwt from 'jsonwebtoken';
-import Redis from 'redis';
+import { createClient } from 'redis';
 import winston from 'winston';
 import dotenv from 'dotenv';
 
@@ -30,7 +30,7 @@ const logger = winston.createLogger({
 });
 
 // Redis client for session management
-const redisClient = Redis.createClient({
+const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
@@ -252,4 +252,3 @@ app.listen(PORT, () => {
 });
 
 export default app;
-

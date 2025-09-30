@@ -5,7 +5,7 @@ import Joi from 'joi';
 import winston from 'winston';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
-import Redis from 'redis';
+import { createClient } from 'redis';
 import fs from 'fs-extra';
 import path from 'path';
 import Handlebars from 'handlebars';
@@ -38,7 +38,7 @@ const db = new Pool({
 });
 
 // Redis client
-const redisClient = Redis.createClient({
+const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
@@ -491,4 +491,3 @@ startServer().catch(error => {
 });
 
 export default app;
-
