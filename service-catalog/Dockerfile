@@ -1,4 +1,4 @@
-# Multi-stage build for API Gateway
+# Multi-stage build for Service Catalog
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -23,26 +23,26 @@ RUN apk add --no-cache dumb-init
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S api-gateway -u 1001
+    adduser -S service-catalog -u 1001
 
 # Copy built application and dependencies
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 
-# Create logs directory with proper permissions
-RUN mkdir -p /app/logs && \
-    chown -R api-gateway:nodejs /app
+# Create data directory for SQLite with proper permissions
+RUN mkdir -p /app/data && \
+    chown -R service-catalog:nodejs /app
 
 # Switch to non-root user
-USER api-gateway
+USER service-catalog
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+    CMD node -e "require('http').get('http://localhost:8081/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8081
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

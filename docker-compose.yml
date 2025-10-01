@@ -7,11 +7,17 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - NODE_ENV=development
-      - JWT_SECRET=your-jwt-secret-here
+      - NODE_ENV=production
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - SERVICE_CATALOG_URL=http://service-catalog:8081
     depends_on:
-      - postgres
-      - redis
+      - service-catalog
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - idp-network
 
@@ -55,16 +61,22 @@ services:
     networks:
       - idp-network
 
-  # Service Catalog
+  # Service Catalog (Current Working Version)
   service-catalog:
-    build: ./services/service-catalog
+    build: ./service-catalog
     ports:
-      - "8083:8080"
+      - "8081:8081"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://idp_user:idp_password@postgres:5432/idp_db
-    depends_on:
-      - postgres
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/service-catalog.db
+    volumes:
+      - service_catalog_data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8081/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - idp-network
 
@@ -186,8 +198,8 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  service_catalog_data:
 
 networks:
   idp-network:
     driver: bridge
-

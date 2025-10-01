@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-catalog-config
+  namespace: shadow-idp
+  labels:
+    app: service-catalog
+    component: backend
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/part-of: shadow-idp-platform
+data:
+  log-level: "info"
+  health-check-interval: "300000"  # 5 minutes in milliseconds
+  database-path: "/app/data/service-catalog.db"
+  max-services: "1000"
+  pagination-limit: "20"
+  config.json: |
+    {
+      "database": {
+        "path": "/app/data/service-catalog.db",
+        "options": {
+          "logging": false,
+          "pool": {
+            "max": 5,
+            "min": 0,
+            "acquire": 30000,
+            "idle": 10000
+          }
+        }
+      },
+      "healthCheck": {
+        "interval": 300000,
+        "timeout": 5000,
+        "retries": 3
+      },
+      "api": {
+        "pagination": {
+          "defaultLimit": 20,
+          "maxLimit": 100
+        },
+        "validation": {
+          "maxNameLength": 100,
+          "maxDescriptionLength": 500
+        }
+      }
+    }
