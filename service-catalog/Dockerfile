@@ -51,10 +51,11 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built application or source code
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist 2>/dev/null || \
-COPY --from=builder --chown=nodejs:nodejs /app/src ./src
-COPY --from=builder --chown=nodejs:nodejs /app/public ./public
+# Copy all application files from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app ./
+
+# Remove node_modules from builder (we'll use production ones)
+RUN rm -rf ./node_modules
 
 # Create necessary directories with proper permissions for Kubernetes
 RUN mkdir -p /app/.cache /tmp && \
