@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service-catalog-sa
+  namespace: shadow-idp
+  labels:
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: shadow-idp
+automountServiceAccountToken: true
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: service-catalog-role
+  labels:
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: shadow-idp
+rules:
+# Read access to services, deployments, and pods for service discovery
+- apiGroups: [""]
+  resources: ["services", "pods", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+# Read access to ingresses for service URLs
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+# Read access to configmaps and secrets (limited)
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+  resourceNames: ["service-catalog-config"]
+# Health check access
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list"]
+# Metrics access (if using Prometheus)
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: service-catalog-binding
+  labels:
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: shadow-idp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: service-catalog-role
+subjects:
+- kind: ServiceAccount
+  name: service-catalog-sa
+  namespace: shadow-idp
+
+---
+# Additional role for namespace-specific operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-catalog-namespace-role
+  namespace: shadow-idp
+  labels:
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: shadow-idp
+rules:
+# Full access to secrets in the shadow-idp namespace
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+  resourceNames: ["service-catalog-secrets", "postgresql-secret"]
+# Access to events for debugging
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "create"]
+# Access to configmaps in the namespace
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: service-catalog-namespace-binding
+  namespace: shadow-idp
+  labels:
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: shadow-idp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-catalog-namespace-role
+subjects:
+- kind: ServiceAccount
+  name: service-catalog-sa
+  namespace: shadow-idp

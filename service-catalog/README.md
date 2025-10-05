@@ -65,11 +65,13 @@ A comprehensive service catalog for the Shadow Internal Developer Platform (IDP)
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 16+
-- PostgreSQL 12+
-- Docker (optional)
+- Node.js 18+ and npm
+- PostgreSQL 12+ database
+- Git
+- Docker (for containerized deployment)
+- Kubernetes cluster (for production deployment)
 
-### Installation
+### Local Development
 
 1. **Clone and navigate to the service catalog**:
 ```bash
@@ -109,17 +111,45 @@ npm run dev
 7. **Access the dashboard**:
 Open http://localhost:8081 in your browser
 
-### Docker Deployment
+### 🐳 Docker Deployment
 
 1. **Build the Docker image**:
 ```bash
-docker build -t shadow-idp/service-catalog .
+docker build -t shadow-idp/service-catalog:latest .
 ```
 
 2. **Run with Docker Compose**:
 ```bash
 docker-compose up -d
 ```
+
+### ☸️ Kubernetes Deployment
+
+For production deployment on Kubernetes:
+
+1. **Quick deployment**:
+```bash
+# Configure environment
+export DB_PASSWORD="your-secure-password"
+export DOMAIN="service-catalog.your-domain.com"
+
+# Deploy
+./scripts/deploy.sh
+```
+
+2. **Manual deployment**:
+```bash
+# Apply all Kubernetes manifests
+kubectl apply -f k8s/
+```
+
+3. **Access the service**:
+```bash
+kubectl port-forward service/service-catalog-service 8080:80 -n shadow-idp
+# Open http://localhost:8080
+```
+
+📖 **For detailed Kubernetes deployment instructions, see [KUBERNETES_DEPLOYMENT.md](./KUBERNETES_DEPLOYMENT.md)**
 
 ## 📊 Dashboard Features
 
