@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import { initializeDatabase, logger } from './database/database';
 import { HealthMonitor } from './services/healthMonitor';
 import serviceRoutes from './routes/services';
+import templateRoutes from './routes/templates';
+import dependencyRoutes from './routes/dependencies';
+import metricsRoutes from './routes/metrics';
 
 const app = express();
 const PORT = process.env.PORT || 8081;
@@ -13,6 +16,9 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files for the dashboard
+app.use(express.static('public'));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -34,6 +40,12 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.use('/api/services', serviceRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/dependencies', dependencyRoutes);
+app.use('/api/metrics', metricsRoutes);
+
+// Legacy routes for backward compatibility
 app.use('/services', serviceRoutes);
 app.use('/', serviceRoutes); // Also handle root path for proxy
 

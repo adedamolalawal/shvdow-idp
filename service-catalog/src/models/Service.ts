@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../database/database';
-import { ServiceMetadata, ServiceStatus, DeploymentInfo } from '../types';
+import { ServiceMetadata, ServiceStatus, DeploymentInfo, ServiceType, ServiceLifecycle, ServiceSLA, ServiceContacts } from '../types';
 
 interface ServiceCreationAttributes extends Optional<ServiceMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastHealthCheck'> {}
 
@@ -18,6 +18,11 @@ export class Service extends Model<ServiceMetadata, ServiceCreationAttributes> i
   public tags!: string[];
   public dependencies!: string[];
   public deploymentInfo!: DeploymentInfo;
+  public serviceType!: ServiceType;
+  public lifecycle!: ServiceLifecycle;
+  public sla?: ServiceSLA;
+  public contacts!: ServiceContacts;
+  public metadata!: Record<string, any>;
   public lastHealthCheck?: Date;
 
   // Timestamps
@@ -132,6 +137,65 @@ Service.init(
         },
       },
     },
+    serviceType: {
+      type: DataTypes.ENUM(...Object.values(ServiceType)),
+      allowNull: false,
+      defaultValue: ServiceType.OTHER,
+    },
+    lifecycle: {
+      type: DataTypes.ENUM(...Object.values(ServiceLifecycle)),
+      allowNull: false,
+      defaultValue: ServiceLifecycle.DEVELOPMENT,
+    },
+    sla: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      validate: {
+        isValidSLA(value: any) {
+          if (value && typeof value === 'object') {
+            if (typeof value.availability !== 'number' || value.availability < 0 || value.availability > 100) {
+              throw new Error('SLA availability must be a number between 0 and 100');
+            }
+            if (typeof value.responseTime !== 'number' || value.responseTime < 0) {
+              throw new Error('SLA response time must be a positive number');
+            }
+            if (typeof value.errorRate !== 'number' || value.errorRate < 0 || value.errorRate > 100) {
+              throw new Error('SLA error rate must be a number between 0 and 100');
+            }
+          }
+        },
+      },
+    },
+    contacts: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: {},
+      validate: {
+        isValidContacts(value: any) {
+          if (!value || typeof value !== 'object') {
+            throw new Error('Contacts must be an object');
+          }
+          if (!value.owner || typeof value.owner !== 'string') {
+            throw new Error('Contacts must have an owner field');
+          }
+          if (value.maintainers && !Array.isArray(value.maintainers)) {
+            throw new Error('Maintainers must be an array');
+          }
+        },
+      },
+    },
+    metadata: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: {},
+      validate: {
+        isValidMetadata(value: any) {
+          if (!value || typeof value !== 'object') {
+            throw new Error('Metadata must be an object');
+          }
+        },
+      },
+    },
     lastHealthCheck: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -162,6 +226,12 @@ Service.init(
       },
       {
         fields: ['status'],
+      },
+      {
+        fields: ['serviceType'],
+      },
+      {
+        fields: ['lifecycle'],
       },
     ],
   }
