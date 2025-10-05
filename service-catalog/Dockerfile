@@ -34,8 +34,16 @@ RUN apk update && apk upgrade && \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user with specific UID for Kubernetes compatibility
-RUN addgroup -g 1000 -S nodejs && \
-    adduser -S -u 1000 -G nodejs nodejs
+RUN if ! getent group 1000 >/dev/null 2>&1; then \
+        addgroup -g 1000 -S nodejs; \
+    else \
+        addgroup -S nodejs; \
+    fi && \
+    if ! getent passwd 1000 >/dev/null 2>&1; then \
+        adduser -S -u 1000 -G nodejs nodejs; \
+    else \
+        adduser -S -G nodejs nodejs; \
+    fi
 
 # Copy package files
 COPY package*.json ./
