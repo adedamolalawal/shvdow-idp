@@ -1,0 +1,69 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: shadow-idp-service-catalog
+  namespace: shadow-idp
+
+# Resources to include in the deployment
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - configmap.yaml
+  - secret.yaml
+  - postgresql.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - hpa.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/part-of: shadow-idp
+  app.kubernetes.io/managed-by: kustomize
+
+# Common annotations
+commonAnnotations:
+  deployment.kubernetes.io/revision: "1"
+
+# Images to use (can be overridden in overlays)
+images:
+  - name: shadow-idp/service-catalog
+    newTag: latest
+
+# ConfigMap generator for additional config
+configMapGenerator:
+  - name: service-catalog-env
+    literals:
+      - DEPLOYMENT_ENV=kubernetes
+      - CLUSTER_NAME=shadow-idp-cluster
+
+# Secret generator (for non-sensitive defaults)
+secretGenerator:
+  - name: service-catalog-generated
+    literals:
+      - GENERATED_SECRET=placeholder
+
+# Namespace for all resources
+namespace: shadow-idp
+
+# Resource name prefix
+namePrefix: ""
+
+# Resource name suffix
+nameSuffix: ""
+
+# Patches for customization
+patches:
+  - target:
+      kind: Deployment
+      name: service-catalog
+    patch: |-
+      - op: add
+        path: /spec/template/metadata/annotations/config.kubernetes.io~1managed-by
+        value: kustomize
+
+# Replicas (can be overridden)
+replicas:
+  - name: service-catalog
+    count: 3

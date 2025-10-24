@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shadow-idp
+  labels:
+    name: shadow-idp
+    app.kubernetes.io/name: shadow-idp
+    app.kubernetes.io/part-of: shadow-idp-platform
+  annotations:
+    description: "Shadow IDP - Internal Developer Platform"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shadow-idp-system
+  labels:
+    name: shadow-idp-system
+    app.kubernetes.io/name: shadow-idp-system
+    app.kubernetes.io/part-of: shadow-idp-platform
+  annotations:
+    description: "Shadow IDP System Components (ArgoCD, Monitoring, etc.)"

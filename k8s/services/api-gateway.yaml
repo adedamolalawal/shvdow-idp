@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: shadow-idp
+  labels:
+    app: api-gateway
+    component: gateway
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/part-of: shadow-idp-platform
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: api-gateway

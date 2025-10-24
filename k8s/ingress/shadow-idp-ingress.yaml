@@ -1,0 +1,308 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shadow-idp-ingress
+  labels:
+    app.kubernetes.io/name: shadow-idp-ingress
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: shadow-idp
+  annotations:
+    # NGINX Ingress Controller annotations
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    
+    # CORS configuration
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    nginx.ingress.kubernetes.io/cors-expose-headers: "Content-Length,Content-Range"
+    nginx.ingress.kubernetes.io/cors-max-age: "1728000"
+    
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:";
+    
+    # Rate limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # TLS certificate management (cert-manager)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    
+spec:
+  tls:
+  - hosts:
+    - DOMAIN_PLACEHOLDER
+    - api.DOMAIN_PLACEHOLDER
+    - catalog.DOMAIN_PLACEHOLDER
+    - grafana.DOMAIN_PLACEHOLDER
+    - prometheus.DOMAIN_PLACEHOLDER
+    - docs.DOMAIN_PLACEHOLDER
+    - alerts.DOMAIN_PLACEHOLDER
+    secretName: shadow-idp-tls
+  
+  rules:
+  # Main Dashboard
+  - host: DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+  
+  # API Gateway
+  - host: api.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway-service
+            port:
+              number: 80
+      # Service Catalog API
+      - path: /catalog
+        pathType: Prefix
+        backend:
+          service:
+            name: service-catalog-service
+            port:
+              number: 80
+      # CI/CD Engine API
+      - path: /cicd
+        pathType: Prefix
+        backend:
+          service:
+            name: cicd-engine-service
+            port:
+              number: 80
+      # Alert Engine API
+      - path: /alerts
+        pathType: Prefix
+        backend:
+          service:
+            name: alert-engine-service
+            port:
+              number: 80
+      # Docs Engine API
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: docs-engine-service
+            port:
+              number: 80
+      # Metrics Collector API
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: metrics-collector-service
+            port:
+              number: 80
+      # Team Management API
+      - path: /teams
+        pathType: Prefix
+        backend:
+          service:
+            name: team-management-service
+            port:
+              number: 80
+      # GitOps Core API
+      - path: /gitops
+        pathType: Prefix
+        backend:
+          service:
+            name: gitops-core-service
+            port:
+              number: 80
+  
+  # Service Catalog Dashboard
+  - host: catalog.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: service-catalog-service
+            port:
+              number: 80
+  
+  # Grafana Dashboard
+  - host: grafana.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana-service
+            port:
+              number: 3000
+  
+  # Prometheus Dashboard
+  - host: prometheus.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-service
+            port:
+              number: 9090
+  
+  # Documentation Portal
+  - host: docs.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: docs-engine-service
+            port:
+              number: 80
+  
+  # Alerts Dashboard
+  - host: alerts.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: alert-engine-service
+            port:
+              number: 80
+
+---
+# Additional ingress for internal services (optional)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shadow-idp-internal-ingress
+  labels:
+    app.kubernetes.io/name: shadow-idp-internal-ingress
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: shadow-idp
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Internal access only
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    
+    # Basic auth for internal services
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: shadow-idp-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Shadow IDP Internal Services'
+    
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    
+spec:
+  tls:
+  - hosts:
+    - internal.DOMAIN_PLACEHOLDER
+    - jaeger.DOMAIN_PLACEHOLDER
+    - redis.DOMAIN_PLACEHOLDER
+    secretName: shadow-idp-internal-tls
+  
+  rules:
+  # Internal services dashboard
+  - host: internal.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+  
+  # Jaeger Tracing
+  - host: jaeger.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jaeger-service
+            port:
+              number: 16686
+
+---
+# Network Policy for ingress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: shadow-idp-ingress-netpol
+  labels:
+    app.kubernetes.io/name: shadow-idp-ingress-netpol
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/part-of: shadow-idp
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow ingress controller traffic
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 16686
+  # Allow internal cluster traffic
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: shadow-idp
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 16686

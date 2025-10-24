@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-catalog-config
+  namespace: shadow-idp
+  labels:
+    app.kubernetes.io/name: service-catalog
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: shadow-idp
+data:
+  NODE_ENV: "production"
+  PORT: "8081"
+  LOG_LEVEL: "info"
+  HEALTH_CHECK_INTERVAL: "30000"
+  METRICS_RETENTION_DAYS: "30"
+  # Database configuration (will be overridden by secrets)
+  DB_HOST: "postgresql-service.shadow-idp.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "service_catalog"
+  # Redis configuration (optional)
+  REDIS_HOST: "redis-service.shadow-idp.svc.cluster.local"
+  REDIS_PORT: "6379"
+  # API Configuration
+  API_PREFIX: "/api"
+  CORS_ORIGIN: "*"
+  # Feature flags
+  ENABLE_METRICS: "true"
+  ENABLE_TEMPLATES: "true"
+  ENABLE_DEPENDENCIES: "true"
+  ENABLE_DASHBOARD: "true"
