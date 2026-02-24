@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  shvdow-idp:
+    build: .
+    container_name: shvdow-idp
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/app/data/shvdow.db
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET:-change-this-admin-secret}
+      - DEFAULT_MAINTENANCE_MESSAGE=${DEFAULT_MAINTENANCE_MESSAGE:-System is currently under maintenance. Please try again later.}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - shvdow-network
+
+  # Optional: Add a reverse proxy (nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: shvdow-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - shvdow-idp
+    restart: unless-stopped
+    networks:
+      - shvdow-network
+    profiles:
+      - with-proxy
+
+networks:
+  shvdow-network:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local
+  logs:
+    driver: local

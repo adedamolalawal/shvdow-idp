@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shvdow IDP - Admin Panel</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🔧 Shvdow IDP Admin</h1>
+                <div class="header-actions">
+                    <span id="admin-username" class="username"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Login Form (shown when not authenticated) -->
+        <div id="login-section" class="login-section">
+            <div class="login-card">
+                <h2>🔐 Admin Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Main Admin Panel (shown when authenticated) -->
+        <div id="admin-panel" class="admin-panel" style="display: none;">
+            
+            <!-- System Status Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 System Status</h3>
+                    <button id="refresh-status" class="btn btn-small">Refresh</button>
+                </div>
+                <div class="card-content">
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span class="status-label">System Status:</span>
+                            <span id="system-status" class="status-value">Loading...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Maintenance Mode:</span>
+                            <span id="maintenance-status" class="status-value">Loading...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Last Updated:</span>
+                            <span id="last-updated" class="status-value">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Mode Control Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔧 Maintenance Mode Control</h3>
+                </div>
+                <div class="card-content">
+                    <div class="maintenance-controls">
+                        <div class="toggle-section">
+                            <button id="toggle-maintenance" class="btn btn-large">
+                                <span id="toggle-text">Loading...</span>
+                            </button>
+                        </div>
+                        
+                        <div class="message-section">
+                            <label for="maintenance-message">Maintenance Message:</label>
+                            <textarea 
+                                id="maintenance-message" 
+                                placeholder="Enter custom maintenance message..."
+                                rows="3"
+                                maxlength="500"
+                            ></textarea>
+                            <div class="message-actions">
+                                <button id="update-message" class="btn btn-secondary">Update Message</button>
+                                <span class="char-count">
+                                    <span id="char-count">0</span>/500
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>⚡ Quick Actions</h3>
+                </div>
+                <div class="card-content">
+                    <div class="quick-actions">
+                        <button id="enable-maintenance" class="btn btn-warning">
+                            🔧 Enable Maintenance
+                        </button>
+                        <button id="disable-maintenance" class="btn btn-success">
+                            ✅ Disable Maintenance
+                        </button>
+                        <button id="view-history" class="btn btn-info">
+                            📋 View History
+                        </button>
+                        <button id="system-health" class="btn btn-info">
+                            💚 System Health
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Modal -->
+            <div id="history-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📋 Maintenance History</h3>
+                        <button id="close-history" class="btn btn-small">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="history-content">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health Modal -->
+            <div id="health-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>💚 System Health</h3>
+                        <button id="close-health" class="btn btn-small">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="health-content">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Processing...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
